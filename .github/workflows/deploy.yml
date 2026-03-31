@@ -1,0 +1,77 @@
+name: CI/CD — Smart Invoice API
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+# ══════════════════════════════════════════════════════════════════════════════
+jobs:
+
+  # ── 1. Test ──────────────────────────────────────────────────────────────────
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pytest
+        run: pytest tests/ -v --tb=short
+        env:
+          # SQS_QUEUE_URL intentionally absent → _send_to_sqs is a no-op in tests
+          AWS_REGION: eu-north-1
+
+  # ── 2. Deploy (only on push to main after tests pass) ─────────────────────
+  deploy:
+    name: Deploy to EC2
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo "=== Deploying Smart Invoice API ==="
+
+            cd /home/ec2-user/app
+
+            # Pull latest code
+            git pull origin main
+
+            # Update Python dependencies
+            pip3 install -r requirements.txt --quiet
+
+            # Restart the service
+            sudo systemctl restart invoice-api
+
+            # Show service status
+            echo ""
+            echo "=== Service status ==="
+            sudo systemctl status invoice-api --no-pager -l
+
+            echo ""
+            echo "=== Deployment complete ==="

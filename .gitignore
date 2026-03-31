@@ -1,0 +1,45 @@
+# Environment & secrets — never commit these
+.env
+*.pem
+*.p12
+
+# Sensitive project & credential files
+cloud-key-pair.pem
+AdminUser_accessKeys.csv
+AdminUser_credentials.csv
+AGENTS.md
+details.txt
+friend-api.txt
+login-details.txt
+pr.txt
+topic.txt
+Provisional Scalable Cloud Programming CA1 Brief Sem 2 202526 (3) 1.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# AWS / Boto3 cache
+.aws/
+
+# Logs
+*.log

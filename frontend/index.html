@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartInvoice — Billing & Invoice Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    :root { --brand: #0d6efd; }
+    body { background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background: linear-gradient(135deg, #0d6efd, #0952c6); }
+    .navbar-brand { font-weight: 800; font-size: 1.4rem; letter-spacing: -0.5px; }
+    .card { border: none; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .stat-card { transition: transform .2s; cursor: default; }
+    .stat-card:hover { transform: translateY(-4px); }
+    .stat-icon { font-size: 2rem; opacity: .8; }
+    .api-badge { font-size: 0.65rem; font-weight: 700; vertical-align: middle; }
+    .nav-pills .nav-link { border-radius: 10px; font-weight: 500; color: #495057; }
+    .nav-pills .nav-link.active { background: #0d6efd; }
+    .section-header { font-size: 1.25rem; font-weight: 700; color: #212529; }
+    .response-box { background: #1e293b; color: #94a3b8; border-radius: 10px;
+      padding: 1rem; font-size: .82rem; white-space: pre-wrap; word-break: break-all;
+      max-height: 320px; overflow-y: auto; }
+    .item-row .remove-btn { width: 36px; }
+    .invoice-row:hover { background: #f8f9fa; }
+    .badge-pending   { background: #fff3cd; color: #856404; }
+    .badge-processed { background: #d1e7dd; color: #0a3622; }
+    footer { background: #1e293b; color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ════════════════════════════════════════════════════════════════ -->
+<nav class="navbar navbar-expand-lg navbar-dark mb-4">
+  <div class="container">
+    <a class="navbar-brand" href="#">
+      <i class="bi bi-receipt-cutoff me-2"></i>SmartInvoice
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto gap-1">
+        <li class="nav-item">
+          <a class="nav-link active" href="#" onclick="showTab('tab-create')">Create Invoice</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" onclick="showTab('tab-list')">My Invoices</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" onclick="showTab('tab-pdf')">PDF</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" onclick="showTab('tab-currency')">Currency</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" onclick="showTab('tab-tax')">Tax</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" onclick="showTab('tab-apidocs')">API Docs</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container pb-5">
+
+  <!-- ═══ STATS CARDS ════════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-4" id="stats-row">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card text-white" style="background:linear-gradient(135deg,#0d6efd,#0952c6)">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small fw-600">Total Invoices</div>
+            <div class="fw-bold fs-2" id="stat-total">—</div>
+          </div>
+          <i class="bi bi-file-text stat-icon text-white-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card text-white" style="background:linear-gradient(135deg,#198754,#146c43)">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small">Total Revenue</div>
+            <div class="fw-bold fs-2" id="stat-revenue">—</div>
+          </div>
+          <i class="bi bi-cash-coin stat-icon text-white-50"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card text-white" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000!important">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small" style="opacity:.7">Pending</div>
+            <div class="fw-bold fs-2" id="stat-pending">—</div>
+          </div>
+          <i class="bi bi-hourglass-split stat-icon" style="opacity:.6"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card text-white" style="background:linear-gradient(135deg,#0dcaf0,#0aa2c0)">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small">Processed</div>
+            <div class="fw-bold fs-2" id="stat-processed">—</div>
+          </div>
+          <i class="bi bi-check2-circle stat-icon text-white-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ NAV PILLS ══════════════════════════════════════════════════════════ -->
+  <ul class="nav nav-pills mb-4 bg-white rounded-3 p-2 shadow-sm flex-wrap gap-1" id="apiTabs">
+    <li class="nav-item">
+      <button class="nav-link active" id="btn-tab-create" onclick="showTab('tab-create')">
+        <i class="bi bi-plus-circle me-1"></i>Create Invoice
+        <span class="badge bg-primary api-badge ms-1">My API #1</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="btn-tab-list" onclick="showTab('tab-list')">
+        <i class="bi bi-list-ul me-1"></i>All Invoices
+        <span class="badge bg-primary api-badge ms-1">My API #1</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="btn-tab-pdf" onclick="showTab('tab-pdf')">
+        <i class="bi bi-file-pdf me-1"></i>Generate PDF
+        <span class="badge bg-success api-badge ms-1">Friend API #2</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="btn-tab-currency" onclick="showTab('tab-currency')">
+        <i class="bi bi-currency-exchange me-1"></i>Currency
+        <span class="badge bg-info api-badge ms-1">Public API #3</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="btn-tab-tax" onclick="showTab('tab-tax')">
+        <i class="bi bi-calculator me-1"></i>Tax & Summary
+        <span class="badge bg-primary api-badge ms-1">My API #4</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="btn-tab-apidocs" onclick="showTab('tab-apidocs')">
+        <i class="bi bi-book me-1"></i>API Docs
+        <span class="badge bg-dark api-badge ms-1">My APIs</span>
+      </button>
+    </li>
+  </ul>
+
+  <!-- ═══ TAB PANES ══════════════════════════════════════════════════════════ -->
+
+  <!-- ─── TAB 1: Create Invoice (API #1 — mine) ─────────────────────────────── -->
+  <div id="tab-create">
+    <div class="card p-4">
+      <div class="d-flex align-items-center mb-3">
+        <div>
+          <div class="section-header"><i class="bi bi-plus-circle me-2 text-primary"></i>Create Invoice</div>
+          <div class="text-muted small">
+            Endpoint: <code>POST /api/invoices/</code>
+            &nbsp;<span class="badge bg-primary api-badge">My API #1</span>
+            &nbsp;Events queued to AWS SQS for async processing
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Customer Name</label>
+          <input type="text" id="cust-name" class="form-control" placeholder="John Doe" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Customer Email</label>
+          <input type="email" id="cust-email" class="form-control" placeholder="john@example.com" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Currency</label>
+          <select id="inv-currency" class="form-select">
+            <option value="USD">USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="INR">INR — Indian Rupee</option>
+            <option value="CAD">CAD — Canadian Dollar</option>
+          </select>
+        </div>
+        <div class="col-md-9">
+          <label class="form-label fw-semibold">Notes (optional)</label>
+          <input type="text" id="inv-notes" class="form-control" placeholder="Payment due in 30 days..." />
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-semibold">Line Items</span>
+          <button class="btn btn-sm btn-outline-primary" onclick="addItem()">
+            <i class="bi bi-plus"></i> Add Item
+          </button>
+        </div>
+        <div id="items-container">
+          <!-- injected by addItem() -->
+        </div>
+      </div>
+
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-primary px-4" onclick="createInvoice()">
+          <i class="bi bi-send me-1"></i>Create Invoice
+        </button>
+        <button class="btn btn-outline-secondary" onclick="resetCreateForm()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+        </button>
+      </div>
+
+      <div id="create-alert" class="mt-3 d-none"></div>
+
+      <div class="mt-3 d-none" id="create-result-box">
+        <div class="fw-semibold mb-1 small text-muted">Response from <code>POST /api/invoices/</code>:</div>
+        <div class="response-box" id="create-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 2: All Invoices (API #1 — mine) ───────────────────────────────── -->
+  <div id="tab-list" class="d-none">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <div class="section-header"><i class="bi bi-list-ul me-2 text-primary"></i>All Invoices</div>
+          <div class="text-muted small">
+            Endpoint: <code>GET /api/invoices/</code>
+            &nbsp;<span class="badge bg-primary api-badge">My API #1</span>
+          </div>
+        </div>
+        <button class="btn btn-outline-primary btn-sm" onclick="loadInvoices()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+      <div id="invoices-table-container">
+        <div class="text-muted text-center py-4">Click Refresh to load invoices</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 3: Generate PDF (API #2 — friend) ─────────────────────────────── -->
+  <div id="tab-pdf" class="d-none">
+    <div class="card p-4">
+      <div class="mb-3">
+        <div class="section-header"><i class="bi bi-file-pdf me-2 text-success"></i>Generate PDF</div>
+        <div class="text-muted small">
+          Proxies to: <code>POST http://cat-env.eba-we2kfxih.us-east-1.elasticbeanstalk.com/generate_pdf_api/</code>
+          &nbsp;<span class="badge bg-success api-badge">Friend API #2</span>
+        </div>
+      </div>
+      <div class="alert alert-info d-flex gap-2">
+        <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+        <div>Provide an existing Invoice ID. The PDF service will generate a downloadable PDF and return a link.</div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label fw-semibold">Invoice ID</label>
+          <input type="text" id="pdf-invoice-id" class="form-control text-uppercase"
+            placeholder="e.g. A1B2C3D4" oninput="this.value=this.value.toUpperCase()" />
+        </div>
+        <div class="col-md-5 d-flex align-items-end">
+          <button class="btn btn-success w-100" onclick="generatePDF()">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Generate PDF
+          </button>
+        </div>
+      </div>
+
+      <div id="pdf-alert" class="mt-3 d-none"></div>
+
+      <div class="mt-3 d-none" id="pdf-result-box">
+        <div class="fw-semibold mb-1 small text-muted">Response from PDF service:</div>
+        <div class="response-box" id="pdf-result"></div>
+        <a id="pdf-link" href="#" target="_blank" class="btn btn-outline-success mt-2 d-none">
+          <i class="bi bi-download me-1"></i>Download PDF
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 4: Currency Converter (API #3 — public Frankfurter) ─────────── -->
+  <div id="tab-currency" class="d-none">
+    <div class="card p-4">
+      <div class="mb-3">
+        <div class="section-header"><i class="bi bi-currency-exchange me-2 text-info"></i>Currency Converter</div>
+        <div class="text-muted small">
+          Public API: <code>GET https://api.frankfurter.app/latest?from=&hellip;&to=&hellip;</code>
+          &nbsp;<span class="badge bg-info text-dark api-badge">Public API #3</span>
+          &nbsp;Free &amp; open-source, no key required
+        </div>
+      </div>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Amount</label>
+          <input type="number" id="conv-amount" class="form-control" value="100" min="0.01" step="0.01" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">From</label>
+          <select id="conv-from" class="form-select">
+            <option value="USD">USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="INR">INR — Indian Rupee</option>
+            <option value="CAD">CAD — Canadian Dollar</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+            <option value="JPY">JPY — Japanese Yen</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">To</label>
+          <select id="conv-to" class="form-select">
+            <option value="EUR">EUR — Euro</option>
+            <option value="USD">USD — US Dollar</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="INR">INR — Indian Rupee</option>
+            <option value="CAD">CAD — Canadian Dollar</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+            <option value="JPY">JPY — Japanese Yen</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-info w-100 text-white" onclick="convertCurrency()">
+            <i class="bi bi-arrow-left-right me-1"></i>Convert
+          </button>
+        </div>
+      </div>
+      <div id="curr-result" class="mt-3"></div>
+      <div class="mt-3">
+        <div class="fw-semibold mb-2 small text-muted">Live Rates vs USD — all major currencies:</div>
+        <div id="rates-grid" class="row g-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 5: Tax Calculator + Invoice Summary (API #4 — mine) ─────────── -->
+  <div id="tab-tax" class="d-none">
+    <div class="row g-3">
+
+      <!-- Tax Calculator -->
+      <div class="col-lg-6">
+        <div class="card p-4 h-100">
+          <div class="mb-3">
+            <div class="section-header"><i class="bi bi-calculator me-2 text-primary"></i>Tax Calculator</div>
+            <div class="text-muted small">
+              Endpoint: <code>POST /api/tax-calculator/</code>
+              &nbsp;<span class="badge bg-primary api-badge">My API #4</span>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-semibold small">Line Items</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="addTaxItem()">
+              <i class="bi bi-plus"></i> Add
+            </button>
+          </div>
+          <div id="tax-items-container"></div>
+
+          <div class="mt-3">
+            <label class="form-label fw-semibold">Tax Rate (%)</label>
+            <div class="input-group">
+              <input type="number" id="tax-rate" class="form-control" value="23" min="0" max="100" step="0.1" />
+              <span class="input-group-text">%</span>
+            </div>
+            <div class="form-text">Default: 23% (Irish VAT)</div>
+          </div>
+
+          <button class="btn btn-primary mt-3 w-100" onclick="calculateTax()">
+            <i class="bi bi-calculator me-1"></i>Calculate Tax
+          </button>
+
+          <div class="mt-3 d-none" id="tax-result-box">
+            <div class="fw-semibold mb-1 small text-muted">Response:</div>
+            <div id="tax-result-display"></div>
+            <div class="response-box mt-2" id="tax-result-raw"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice Summary -->
+      <div class="col-lg-6">
+        <div class="card p-4 h-100">
+          <div class="mb-3">
+            <div class="section-header"><i class="bi bi-clipboard-data me-2 text-primary"></i>Invoice Summary</div>
+            <div class="text-muted small">
+              Endpoint: <code>POST /api/invoice-summary/</code>
+              &nbsp;<span class="badge bg-primary api-badge">My API #4</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Invoice ID</label>
+            <input type="text" id="summary-id" class="form-control text-uppercase"
+              placeholder="e.g. A1B2C3D4" oninput="this.value=this.value.toUpperCase()" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Discount (%)</label>
+            <div class="input-group">
+              <input type="number" id="summary-discount" class="form-control" value="0" min="0" max="100" step="1" />
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary w-100" onclick="getInvoiceSummary()">
+            <i class="bi bi-bar-chart me-1"></i>Get Summary
+          </button>
+
+          <div class="mt-3 d-none" id="summary-result-box">
+            <div class="fw-semibold mb-1 small text-muted">Response:</div>
+            <div id="summary-result-display"></div>
+            <div class="response-box mt-2" id="summary-result-raw"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 6: API Documentation (My APIs #1 & #4 only) ──────────────────── -->
+  <div id="tab-apidocs" class="d-none">
+
+    <!-- Intro -->
+    <div class="card p-4 mb-3">
+      <div class="section-header mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-book fs-4 text-dark"></i> My API Documentation
+      </div>
+      <p class="text-muted small mb-2">
+        Full reference for the two FastAPI services written by me (API&nbsp;#1 and API&nbsp;#4).
+        The friend's PDF service and the public Frankfurter currency API are third-party and documented on their own sites.
+      </p>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="/docs" target="_blank" class="btn btn-sm btn-primary">
+          <i class="bi bi-braces me-1"></i>Swagger UI — <code>/docs</code>
+        </a>
+        <a href="/redoc" target="_blank" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-file-richtext me-1"></i>ReDoc — <code>/redoc</code>
+        </a>
+      </div>
+    </div>
+
+    <!-- ═══ API #1 — Invoice Management ═══════════════════════════════════════ -->
+    <div class="card mb-3">
+      <div class="card-header text-white fw-bold d-flex align-items-center gap-2"
+           style="background:linear-gradient(135deg,#0d6efd,#0952c6)">
+        <i class="bi bi-receipt"></i> API #1 — Invoice Management
+        <span class="badge bg-white text-primary ms-auto">Base URL: /api/invoices/</span>
+      </div>
+      <div class="accordion accordion-flush" id="acc-api1">
+
+        <!-- POST /api/invoices/ -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#doc-create-invoice">
+              <span class="badge bg-success me-2 flex-shrink-0">POST</span>
+              <code class="me-2">/api/invoices/</code>
+              <span class="text-muted small">Create a new invoice</span>
+            </button>
+          </h2>
+          <div id="doc-create-invoice" class="accordion-collapse collapse">
+            <div class="accordion-body small">
+              <p class="mb-2 text-muted">
+                Creates an invoice, stores it in memory, enqueues an event to <strong>AWS SQS</strong>
+                for async processing, and runs a background task to compute subtotal / 23% VAT / total.
+              </p>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-1">Request Body <span class="badge bg-danger">application/json</span></div>
+                  <div class="response-box">{
+  "customer_name": "Alice Smith",      // required
+  "customer_email": "alice@test.com",  // required
+  "items": [
+    {
+      "description": "Laptop",  // required
+      "quantity": 1,            // int &gt;= 1, required
+      "unit_price": 1000.00     // float &gt;= 0, required
+    }
+  ],
+  "currency": "USD",  // optional, default "USD"
+  "notes": "Net 30"  // optional
+}</div>
+                  <table class="table table-sm table-bordered mt-2">
+                    <thead class="table-light"><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>customer_name</code></td><td>string</td><td><span class="badge bg-danger">yes</span></td></tr>
+                      <tr><td><code>customer_email</code></td><td>string</td><td><span class="badge bg-danger">yes</span></td></tr>
+                      <tr><td><code>items</code></td><td>array (min 1)</td><td><span class="badge bg-danger">yes</span></td></tr>
+                      <tr><td><code>items[].description</code></td><td>string</td><td><span class="badge bg-danger">yes</span></td></tr>
+                      <tr><td><code>items[].quantity</code></td><td>int &ge; 1</td><td><span class="badge bg-danger">yes</span></td></tr>
+                      <tr><td><code>items[].unit_price</code></td><td>float &ge; 0</td><td><span class="badge bg-danger">yes</span></td></tr>
+                      <tr><td><code>currency</code></td><td>string</td><td><span class="badge bg-secondary">no</span> — default: USD</td></tr>
+                      <tr><td><code>notes</code></td><td>string</td><td><span class="badge bg-secondary">no</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-1">Response <span class="badge bg-success">200 OK</span></div>
+                  <div class="response-box">{
+  "message": "Invoice created successfully",
+  "invoice": {
+    "invoice_id": "A1B2C3D4",
+    "customer_name": "Alice Smith",
+    "customer_email": "alice@test.com",
+    "items": [...],
+    "currency": "USD",
+    "notes": "Net 30",
+    "status": "processed",
+    "subtotal": 1050.00,
+    "tax": 241.50,
+    "total": 1291.50,
+    "created_at": "2026-03-31T10:00:00Z"
+  }
+}</div>
+                  <div class="mt-2">
+                    <span class="badge bg-success">200</span> Invoice created<br>
+                    <span class="badge bg-danger">422</span> Validation error
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GET /api/invoices/ -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#doc-list-invoices">
+              <span class="badge bg-primary me-2 flex-shrink-0">GET</span>
+              <code class="me-2">/api/invoices/</code>
+              <span class="text-muted small">List all invoices</span>
+            </button>
+          </h2>
+          <div id="doc-list-invoices" class="accordion-collapse collapse">
+            <div class="accordion-body small">
+              <p class="mb-2 text-muted">Returns all invoices and total count. No parameters required.</p>
+              <div class="fw-semibold mb-1">Response <span class="badge bg-success">200 OK</span></div>
+              <div class="response-box">{
+  "total": 2,
+  "invoices": [
+    {
+      "invoice_id": "A1B2C3D4",
+      "customer_name": "Alice Smith",
+      "status": "processed",
+      "total": 1291.50,
+      ...
+    }
+  ]
+}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GET /api/invoices/{invoice_id} -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#doc-get-invoice">
+              <span class="badge bg-primary me-2 flex-shrink-0">GET</span>
+              <code class="me-2">/api/invoices/{invoice_id}</code>
+              <span class="text-muted small">Get invoice by ID</span>
+            </button>
+          </h2>
+          <div id="doc-get-invoice" class="accordion-collapse collapse">
+            <div class="accordion-body small">
+              <p class="mb-2 text-muted">Returns a single invoice. Lookup is case-insensitive.</p>
+              <table class="table table-sm table-bordered mb-2">
+                <thead class="table-light"><tr><th>Path Param</th><th>Type</th><th>Example</th></tr></thead>
+                <tbody><tr><td><code>invoice_id</code></td><td>string</td><td><code>A1B2C3D4</code></td></tr></tbody>
+              </table>
+              <span class="badge bg-success">200</span> Invoice object &nbsp;
+              <span class="badge bg-danger">404</span> Invoice not found
+            </div>
+          </div>
+        </div>
+
+        <!-- DELETE /api/invoices/{invoice_id} -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#doc-delete-invoice">
+              <span class="badge bg-danger me-2 flex-shrink-0">DELETE</span>
+              <code class="me-2">/api/invoices/{invoice_id}</code>
+              <span class="text-muted small">Delete an invoice</span>
+            </button>
+          </h2>
+          <div id="doc-delete-invoice" class="accordion-collapse collapse">
+            <div class="accordion-body small">
+              <p class="mb-2 text-muted">Permanently removes an invoice from the store.</p>
+              <table class="table table-sm table-bordered mb-2">
+                <thead class="table-light"><tr><th>Path Param</th><th>Type</th><th>Example</th></tr></thead>
+                <tbody><tr><td><code>invoice_id</code></td><td>string</td><td><code>A1B2C3D4</code></td></tr></tbody>
+              </table>
+              <div class="response-box mb-1">{"message": "Invoice deleted successfully"}</div>
+              <span class="badge bg-success">200</span> Deleted &nbsp;
+              <span class="badge bg-danger">404</span> Not found
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end API #1 card -->
+
+    <!-- ═══ API #4 — Tax Calculator & Analytics ═══════════════════════════════ -->
+    <div class="card mb-3">
+      <div class="card-header text-white fw-bold d-flex align-items-center gap-2"
+           style="background:linear-gradient(135deg,#198754,#146c43)">
+        <i class="bi bi-calculator"></i> API #4 — Tax Calculator &amp; Analytics
+        <span class="badge bg-white text-success ms-auto">Base URL: /api/</span>
+      </div>
+      <div class="accordion accordion-flush" id="acc-api4">
+
+        <!-- POST /api/tax-calculator/ -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#doc-tax-calc">
+              <span class="badge bg-success me-2 flex-shrink-0">POST</span>
+              <code class="me-2">/api/tax-calculator/</code>
+              <span class="text-muted small">Calculate tax on a list of line items</span>
+            </button>
+          </h2>
+          <div id="doc-tax-calc" class="accordion-collapse collapse">
+            <div class="accordion-body small">
+              <p class="mb-2 text-muted">
+                Computes subtotal, tax amount, and grand total. Default tax rate is
+                <strong>23% (Irish VAT)</strong>. Pass any rate between 0–100.
+              </p>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-1">Request Body <span class="badge bg-danger">application/json</span></div>
+                  <div class="response-box">{
+  "items": [
+    {
+      "description": "Laptop",
+      "quantity": 1,
+      "unit_price": 1000.00
+    }
+  ],
+  "tax_rate": 23.0
+}</div>
+                  <table class="table table-sm table-bordered mt-2">
+                    <thead class="table-light"><tr><th>Field</th><th>Type</th><th>Default</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>items</code></td><td>array (min 1)</td><td>—</td></tr>
+                      <tr><td><code>tax_rate</code></td><td>float 0–100</td><td>23.0</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-1">Response <span class="badge bg-success">200 OK</span></div>
+                  <div class="response-box">{
+  "subtotal": 1000.00,
+  "tax_rate_pct": 23.0,
+  "tax_amount": 230.00,
+  "total": 1230.00
+}</div>
+                  <div class="mt-2">
+                    <span class="badge bg-success">200</span> Tax breakdown<br>
+                    <span class="badge bg-danger">422</span> Validation error (e.g. tax_rate &gt; 100)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- POST /api/invoice-summary/ -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#doc-inv-summary">
+              <span class="badge bg-success me-2 flex-shrink-0">POST</span>
+              <code class="me-2">/api/invoice-summary/</code>
+              <span class="text-muted small">Detailed financial breakdown with optional discount</span>
+            </button>
+          </h2>
+          <div id="doc-inv-summary" class="accordion-collapse collapse">
+            <div class="accordion-body small">
+              <p class="mb-2 text-muted">
+                Returns a full financial breakdown for an existing invoice:
+                subtotal &rarr; discount &rarr; taxable amount &rarr; 23% VAT &rarr; total due.
+              </p>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-1">Request Body <span class="badge bg-danger">application/json</span></div>
+                  <div class="response-box">{
+  "invoice_id": "A1B2C3D4",
+  "discount_percentage": 10.0
+}</div>
+                  <table class="table table-sm table-bordered mt-2">
+                    <thead class="table-light"><tr><th>Field</th><th>Type</th><th>Default</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>invoice_id</code></td><td>string</td><td>—</td></tr>
+                      <tr><td><code>discount_percentage</code></td><td>float 0–100</td><td>0.0</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="col-md-6">
+                  <div class="fw-semibold mb-1">Response <span class="badge bg-success">200 OK</span></div>
+                  <div class="response-box">{
+  "invoice_id": "A1B2C3D4",
+  "customer_name": "Alice Smith",
+  "subtotal": 1050.00,
+  "discount_pct": 10.0,
+  "discount_amount": 105.00,
+  "taxable_amount": 945.00,
+  "tax_23pct": 217.35,
+  "total_due": 1162.35
+}</div>
+                  <div class="mt-2">
+                    <span class="badge bg-success">200</span> Breakdown<br>
+                    <span class="badge bg-danger">404</span> Invoice not found
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GET /api/analytics/ -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+              data-bs-toggle="collapse" data-bs-target="#doc-analytics">
+              <span class="badge bg-primary me-2 flex-shrink-0">GET</span>
+              <code class="me-2">/api/analytics/</code>
+              <span class="text-muted small">Aggregate invoice statistics</span>
+            </button>
+          </h2>
+          <div id="doc-analytics" class="accordion-collapse collapse">
+            <div class="accordion-body small">
+              <p class="mb-2 text-muted">
+                Returns aggregate stats across all invoices: total count, total revenue, and status breakdown.
+                Consumed by the dashboard stats cards at the top of the page.
+              </p>
+              <div class="fw-semibold mb-1">Response <span class="badge bg-success">200 OK</span></div>
+              <div class="response-box">{
+  "total_invoices": 5,
+  "total_revenue": 6250.00,
+  "pending": 1,
+  "processed": 4
+}</div>
+
+              <div class="mt-2">
+                <span class="badge bg-success">200</span> Stats object (always succeeds)
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end API #4 card -->
+
+  </div><!-- end tab-apidocs -->
+
+</div><!-- /container -->
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════════════ -->
+<footer class="py-3 mt-4 text-center small">
+  <div class="container">
+    Smart Billing &amp; Invoice Management System &mdash; FastAPI + Bootstrap 5 + AWS EC2 + SQS
+    &nbsp;|&nbsp;
+    <a href="/docs" class="text-info" target="_blank">API Docs</a>
+    &nbsp;|&nbsp;
+    <a href="https://frankfurter.dev" class="text-info" target="_blank">Frankfurter API</a>
+  </div>
+</footer>
+
+<!-- Toast container -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════════
+   SmartInvoice — Frontend Logic
+   APIs integrated:
+     #1 (mine)   : /api/invoices/
+     #2 (friend) : /api/generate-pdf/  →  proxies to elasticbeanstalk PDF service
+     #3 (public) : https://api.frankfurter.app/  (called directly)
+     #4 (mine)   : /api/tax-calculator/  /api/invoice-summary/  /api/analytics/
+══════════════════════════════════════════════════════════════════════════════ */
+
+const API = '';  // Same origin — FastAPI serves both backend and frontend
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function showToast(msg, type = 'success') {
+  const id = 'toast-' + Date.now();
+  const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+  const html = `
+    <div id="${id}" class="toast align-items-center text-white ${bgClass} border-0 show mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">${msg}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>`;
+  document.getElementById('toast-container').insertAdjacentHTML('beforeend', html);
+  setTimeout(() => { const el = document.getElementById(id); if (el) el.remove(); }, 3500);
+}
+
+function setAlert(elId, msg, type = 'success') {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.className = `alert alert-${type} mt-3`;
+  el.textContent = msg;
+  el.classList.remove('d-none');
+}
+
+function clearAlert(elId) {
+  const el = document.getElementById(elId);
+  if (el) el.classList.add('d-none');
+}
+
+function showResponseBox(boxId, resultId, data) {
+  document.getElementById(boxId).classList.remove('d-none');
+  document.getElementById(resultId).textContent = JSON.stringify(data, null, 2);
+}
+
+async function apiFetch(url, options = {}) {
+  const r = await fetch(API + url, options);
+  const data = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, data };
+}
+
+// ── Tab Switching ──────────────────────────────────────────────────────────────
+
+const TABS = ['tab-create', 'tab-list', 'tab-pdf', 'tab-currency', 'tab-tax', 'tab-apidocs'];
+
+function showTab(id) {
+  TABS.forEach(t => {
+    document.getElementById(t).classList.toggle('d-none', t !== id);
+    const btn = document.getElementById('btn-' + t);
+    if (btn) btn.classList.toggle('active', t === id);
+  });
+  if (id === 'tab-list') loadInvoices();
+  if (id === 'tab-currency') loadAllRates();
+}
+
+// ── Stats (API #4 — analytics) ────────────────────────────────────────────────
+
+async function loadStats() {
+  const { ok, data } = await apiFetch('/api/analytics/');
+  if (!ok) return;
+  document.getElementById('stat-total').textContent     = data.total_invoices ?? 0;
+  document.getElementById('stat-revenue').textContent   = '$' + (data.total_revenue ?? 0).toFixed(2);
+  document.getElementById('stat-pending').textContent   = data.pending ?? 0;
+  document.getElementById('stat-processed').textContent = data.processed ?? 0;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API #1 — Create Invoice
+// ══════════════════════════════════════════════════════════════════════════════
+
+let itemCount = 0;
+
+function addItem() {
+  itemCount++;
+  const id = 'item-' + itemCount;
+  const html = `
+    <div class="row g-2 mb-2 item-row align-items-end" id="${id}">
+      <div class="col-md-5">
+        <input type="text" class="form-control form-control-sm item-desc" placeholder="Description" />
+      </div>
+      <div class="col-md-2">
+        <input type="number" class="form-control form-control-sm item-qty" placeholder="Qty" value="1" min="1" />
+      </div>
+      <div class="col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control item-price" placeholder="Unit Price" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-sm btn-outline-danger remove-btn w-100"
+          onclick="document.getElementById('${id}').remove()">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('items-container').insertAdjacentHTML('beforeend', html);
+}
+
+function getItems() {
+  return Array.from(document.querySelectorAll('.item-row')).map(row => ({
+    description: row.querySelector('.item-desc').value,
+    quantity: parseInt(row.querySelector('.item-qty').value) || 1,
+    unit_price: parseFloat(row.querySelector('.item-price').value) || 0
+  })).filter(i => i.description.trim());
+}
+
+async function createInvoice() {
+  clearAlert('create-alert');
+  const customer_name  = document.getElementById('cust-name').value.trim();
+  const customer_email = document.getElementById('cust-email').value.trim();
+  const currency       = document.getElementById('inv-currency').value;
+  const notes          = document.getElementById('inv-notes').value.trim();
+  const items          = getItems();
+
+  if (!customer_name) { setAlert('create-alert', 'Customer name is required.', 'warning'); return; }
+  if (!customer_email) { setAlert('create-alert', 'Customer email is required.', 'warning'); return; }
+  if (!items.length) { setAlert('create-alert', 'Add at least one line item.', 'warning'); return; }
+
+  const { ok, data } = await apiFetch('/api/invoices/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ customer_name, customer_email, items, currency, notes: notes || null })
+  });
+
+  showResponseBox('create-result-box', 'create-result', data);
+  if (ok) {
+    showToast(`Invoice ${data.invoice?.invoice_id} created successfully!`);
+    loadStats();
+  } else {
+    setAlert('create-alert', data.detail || 'Failed to create invoice.', 'danger');
+  }
+}
+
+function resetCreateForm() {
+  document.getElementById('cust-name').value = '';
+  document.getElementById('cust-email').value = '';
+  document.getElementById('inv-notes').value = '';
+  document.getElementById('items-container').innerHTML = '';
+  document.getElementById('create-result-box').classList.add('d-none');
+  clearAlert('create-alert');
+  itemCount = 0;
+  addItem(); // re-add one blank row
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API #1 — List / Delete Invoices
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function loadInvoices() {
+  const container = document.getElementById('invoices-table-container');
+  container.innerHTML = '<div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>Loading...</div>';
+
+  const { ok, data } = await apiFetch('/api/invoices/');
+  if (!ok) { container.innerHTML = '<div class="alert alert-danger">Failed to load invoices.</div>'; return; }
+
+  if (!data.invoices.length) {
+    container.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No invoices yet. Create your first one!</div>';
+    return;
+  }
+
+  const rows = data.invoices.map(inv => {
+    const statusCls = inv.status === 'processed' ? 'badge-processed' : 'badge-pending';
+    const total = inv.total != null ? `$${inv.total.toFixed(2)}` : '—';
+    const items = inv.items.length + ' item' + (inv.items.length !== 1 ? 's' : '');
+    return `
+      <tr class="invoice-row">
+        <td><code class="text-primary fw-bold">${inv.invoice_id}</code></td>
+        <td>${escHtml(inv.customer_name)}<br><small class="text-muted">${escHtml(inv.customer_email)}</small></td>
+        <td>${items}</td>
+        <td><strong>${total}</strong> <small class="text-muted">${inv.currency}</small></td>
+        <td><span class="badge rounded-pill px-2 py-1 ${statusCls}">${inv.status}</span></td>
+        <td><small class="text-muted">${inv.created_at.slice(0,10)}</small></td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoice('${inv.invoice_id}')">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Invoice ID</th><th>Customer</th><th>Items</th>
+            <th>Total</th><th>Status</th><th>Date</th><th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="text-muted small mt-2 px-2">${data.total} invoice(s) found.</div>`;
+}
+
+async function deleteInvoice(id) {
+  if (!confirm(`Delete invoice ${id}?`)) return;
+  const { ok, data } = await apiFetch(`/api/invoices/${id}`, { method: 'DELETE' });
+  if (ok) { showToast('Invoice deleted.', 'success'); loadInvoices(); loadStats(); }
+  else showToast(data.detail || 'Delete failed.', 'error');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API #2 — Generate PDF  (friend's service, proxied via /api/generate-pdf/)
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function generatePDF() {
+  clearAlert('pdf-alert');
+  const invoice_id = document.getElementById('pdf-invoice-id').value.trim().toUpperCase();
+  if (!invoice_id) { setAlert('pdf-alert', 'Please enter an Invoice ID.', 'warning'); return; }
+
+  setAlert('pdf-alert', 'Contacting friend\'s PDF service...', 'info');
+
+  const { ok, data } = await apiFetch(`/api/generate-pdf/?invoice_id=${encodeURIComponent(invoice_id)}`, {
+    method: 'POST'
+  });
+
+  showResponseBox('pdf-result-box', 'pdf-result', data);
+
+  if (ok) {
+    clearAlert('pdf-alert');
+    showToast('PDF generated successfully!');
+    // Try common response keys for the PDF URL
+    const pdfUrl = data.pdf_url || data.url || data.download_url || data.link || data.file_url;
+    const linkBtn = document.getElementById('pdf-link');
+    if (pdfUrl) {
+      linkBtn.href = pdfUrl;
+      linkBtn.classList.remove('d-none');
+    } else {
+      linkBtn.classList.add('d-none');
+    }
+  } else {
+    document.getElementById('pdf-link').classList.add('d-none');
+    setAlert('pdf-alert', data.detail || 'PDF generation failed.', 'danger');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API #3 — Currency Converter  (Frankfurter — public, free, no key)
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function convertCurrency() {
+  const amount = parseFloat(document.getElementById('conv-amount').value);
+  const from   = document.getElementById('conv-from').value;
+  const to     = document.getElementById('conv-to').value;
+  const result = document.getElementById('curr-result');
+
+  if (isNaN(amount) || amount <= 0) {
+    result.innerHTML = '<div class="alert alert-warning">Please enter a valid amount.</div>'; return;
+  }
+  if (from === to) {
+    result.innerHTML = `<div class="alert alert-info"><strong>${amount} ${from}</strong> = <strong>${amount} ${to}</strong></div>`; return;
+  }
+
+  result.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Fetching rate from Frankfurter API…</div>';
+
+  try {
+    const r = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+    const d = await r.json();
+    const rate = d.rates[to];
+    const converted = (amount * rate).toFixed(4);
+    result.innerHTML = `
+      <div class="alert alert-success d-flex align-items-center gap-3 mb-0">
+        <i class="bi bi-check-circle-fill fs-4"></i>
+        <div>
+          <div class="fs-5"><strong>${amount.toFixed(2)} ${from}</strong> = <strong>${converted} ${to}</strong></div>
+          <div class="small text-muted">Exchange rate: 1 ${from} = ${rate} ${to} &nbsp;&bull;&nbsp; Source: api.frankfurter.app</div>
+        </div>
+      </div>`;
+  } catch {
+    result.innerHTML = '<div class="alert alert-danger">Failed to fetch exchange rate. Check your internet connection.</div>';
+  }
+}
+
+async function loadAllRates() {
+  const grid = document.getElementById('rates-grid');
+  grid.innerHTML = '<div class="col-12 text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Loading live rates…</div>';
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const d = await r.json();
+    grid.innerHTML = Object.entries(d.rates).map(([ccy, rate]) => `
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="card text-center p-2">
+          <div class="fw-bold text-primary">${ccy}</div>
+          <div class="small text-muted">${parseFloat(rate).toFixed(4)}</div>
+        </div>
+      </div>`).join('');
+  } catch {
+    grid.innerHTML = '<div class="col-12 text-muted small">Could not load rates.</div>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API #4 — Tax Calculator
+// ══════════════════════════════════════════════════════════════════════════════
+
+let taxItemCount = 0;
+
+function addTaxItem() {
+  taxItemCount++;
+  const id = 'txitem-' + taxItemCount;
+  const html = `
+    <div class="row g-2 mb-2 item-row align-items-end" id="${id}">
+      <div class="col-5">
+        <input type="text" class="form-control form-control-sm tax-desc" placeholder="Description" />
+      </div>
+      <div class="col-2">
+        <input type="number" class="form-control form-control-sm tax-qty" placeholder="Qty" value="1" min="1" />
+      </div>
+      <div class="col-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control tax-price" placeholder="Price" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="col-2">
+        <button class="btn btn-sm btn-outline-danger w-100"
+          onclick="document.getElementById('${id}').remove()">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('tax-items-container').insertAdjacentHTML('beforeend', html);
+}
+
+function getTaxItems() {
+  return Array.from(document.querySelectorAll('#tax-items-container .item-row')).map(row => ({
+    description: row.querySelector('.tax-desc').value,
+    quantity: parseInt(row.querySelector('.tax-qty').value) || 1,
+    unit_price: parseFloat(row.querySelector('.tax-price').value) || 0
+  })).filter(i => i.description.trim());
+}
+
+async function calculateTax() {
+  const items    = getTaxItems();
+  const tax_rate = parseFloat(document.getElementById('tax-rate').value);
+
+  if (!items.length) { showToast('Add at least one item.', 'error'); return; }
+
+  const { ok, data } = await apiFetch('/api/tax-calculator/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, tax_rate })
+  });
+
+  const box = document.getElementById('tax-result-box');
+  box.classList.remove('d-none');
+
+  if (ok) {
+    document.getElementById('tax-result-display').innerHTML = `
+      <div class="row g-2 text-center">
+        <div class="col-4">
+          <div class="card p-2"><div class="small text-muted">Subtotal</div>
+          <div class="fw-bold text-dark">$${data.subtotal}</div></div>
+        </div>
+        <div class="col-4">
+          <div class="card p-2"><div class="small text-muted">Tax (${data.tax_rate_pct}%)</div>
+          <div class="fw-bold text-warning">$${data.tax_amount}</div></div>
+        </div>
+        <div class="col-4">
+          <div class="card p-2 bg-primary text-white"><div class="small">Total</div>
+          <div class="fw-bold">$${data.total}</div></div>
+        </div>
+      </div>`;
+  }
+  document.getElementById('tax-result-raw').textContent = JSON.stringify(data, null, 2);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// API #4 — Invoice Summary
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function getInvoiceSummary() {
+  const invoice_id          = document.getElementById('summary-id').value.trim().toUpperCase();
+  const discount_percentage = parseFloat(document.getElementById('summary-discount').value) || 0;
+  if (!invoice_id) { showToast('Please enter an Invoice ID.', 'error'); return; }
+
+  const { ok, data } = await apiFetch('/api/invoice-summary/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ invoice_id, discount_percentage })
+  });
+
+  const box = document.getElementById('summary-result-box');
+  box.classList.remove('d-none');
+
+  if (ok) {
+    document.getElementById('summary-result-display').innerHTML = `
+      <table class="table table-sm mb-2">
+        <tr><td class="text-muted">Subtotal</td>        <td class="text-end fw-semibold">$${data.subtotal}</td></tr>
+        <tr><td class="text-muted">Discount (${data.discount_pct}%)</td><td class="text-end text-danger">− $${data.discount_amount}</td></tr>
+        <tr><td class="text-muted">Taxable Amount</td>   <td class="text-end">$${data.taxable_amount}</td></tr>
+        <tr><td class="text-muted">VAT 23%</td>          <td class="text-end text-warning">+ $${data.tax_23pct}</td></tr>
+        <tr class="table-primary"><td class="fw-bold">Total Due</td><td class="text-end fw-bold">$${data.total_due}</td></tr>
+      </table>`;
+  }
+  document.getElementById('summary-result-raw').textContent = JSON.stringify(data, null, 2);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  addItem();      // one blank invoice row on load
+  addTaxItem();   // one blank tax item row on load
+  loadStats();    // analytics dashboard
+});
+</script>
+</body>
+</html>
