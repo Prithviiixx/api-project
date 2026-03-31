@@ -57,18 +57,52 @@ jobs:
             set -e
             echo "=== Deploying Smart Invoice API ==="
 
-            cd /home/ec2-user/app
+            # ── Clone or pull ──────────────────────────────────────────────
+            if [ -d "/home/ec2-user/app/.git" ]; then
+              cd /home/ec2-user/app
+              git pull origin main
+            else
+              git clone https://github.com/Prithviiixx/api-project.git /home/ec2-user/app
+              cd /home/ec2-user/app
+            fi
 
-            # Pull latest code
-            git pull origin main
-
-            # Update Python dependencies
+            # ── Python dependencies ────────────────────────────────────────
             pip3 install -r requirements.txt --quiet
 
-            # Restart the service
-            sudo systemctl restart invoice-api
+            # ── Write .env (from GitHub secret) ───────────────────────────
+            cat > /home/ec2-user/app/.env << 'ENVEOF'
+            AWS_REGION=eu-north-1
+            SQS_QUEUE_URL=${{ secrets.SQS_QUEUE_URL }}
+            ENVEOF
 
-            # Show service status
+            # ── Ensure systemd service file exists ────────────────────────
+            sudo tee /etc/systemd/system/invoice-api.service > /dev/null << 'SVCEOF'
+            [Unit]
+            Description=Smart Billing & Invoice Management API
+            After=network.target
+
+            [Service]
+            User=ec2-user
+            WorkingDirectory=/home/ec2-user/app
+            ExecStart=/usr/local/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+            Restart=always
+            RestartSec=5
+            EnvironmentFile=/home/ec2-user/app/.env
+
+            [Install]
+            WantedBy=multi-user.target
+            SVCEOF
+
+            sudo systemctl daemon-reload
+            sudo systemctl enable invoice-api
+
+            # ── Start or restart ──────────────────────────────────────────
+            if sudo systemctl is-active --quiet invoice-api; then
+              sudo systemctl restart invoice-api
+            else
+              sudo systemctl start invoice-api
+            fi
+
             echo ""
             echo "=== Service status ==="
             sudo systemctl status invoice-api --no-pager -l
