@@ -192,7 +192,7 @@ def build_user_data(sqs_queue_url: str) -> str:
         [Service]
         User=ec2-user
         WorkingDirectory=/home/ec2-user/app
-        ExecStart=/usr/local/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+        ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
         Restart=always
         RestartSec=5
         EnvironmentFile=/home/ec2-user/app/.env
