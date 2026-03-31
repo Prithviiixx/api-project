@@ -888,7 +888,7 @@ function addItem() {
 }
 
 function getItems() {
-  return Array.from(document.querySelectorAll('.item-row')).map(row => ({
+  return Array.from(document.querySelectorAll('#items-container .item-row')).map(row => ({
     description: row.querySelector('.item-desc').value,
     quantity: parseInt(row.querySelector('.item-qty').value) || 1,
     unit_price: parseFloat(row.querySelector('.item-price').value) || 0
@@ -1116,9 +1116,9 @@ function addTaxItem() {
 
 function getTaxItems() {
   return Array.from(document.querySelectorAll('#tax-items-container .item-row')).map(row => ({
-    description: row.querySelector('.tax-desc').value,
-    quantity: parseInt(row.querySelector('.tax-qty').value) || 1,
-    unit_price: parseFloat(row.querySelector('.tax-price').value) || 0
+    description: row.querySelector('.tax-desc') ? row.querySelector('.tax-desc').value : '',
+    quantity: parseInt(row.querySelector('.tax-qty') ? row.querySelector('.tax-qty').value : 1) || 1,
+    unit_price: parseFloat(row.querySelector('.tax-price') ? row.querySelector('.tax-price').value : 0) || 0
   })).filter(i => i.description.trim());
 }
 
