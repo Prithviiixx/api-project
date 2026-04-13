@@ -783,7 +783,7 @@
    APIs integrated:
      #1 (mine)   : /api/invoices/
      #2 (friend) : /api/generate-pdf/  →  proxies to elasticbeanstalk PDF service
-     #3 (public) : https://api.frankfurter.app/  (called directly)
+     #3 (public) : https://api.frankfurter.dev/v2/  (called directly)
      #4 (mine)   : /api/tax-calculator/  /api/invoice-summary/  /api/analytics/
 ══════════════════════════════════════════════════════════════════════════════ */
 
@@ -1055,7 +1055,7 @@ async function convertCurrency() {
         <i class="bi bi-check-circle-fill fs-4"></i>
         <div>
           <div class="fs-5"><strong>${amount.toFixed(2)} ${from}</strong> = <strong>${converted} ${to}</strong></div>
-          <div class="small text-muted">Exchange rate: 1 ${from} = ${rate} ${to} &nbsp;&bull;&nbsp; Source: api.frankfurter.app</div>
+          <div class="small text-muted">Exchange rate: 1 ${from} = ${rate} ${to} &nbsp;&bull;&nbsp; Source: api.frankfurter.dev</div>
         </div>
       </div>`;
   } catch {
