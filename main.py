@@ -177,7 +177,7 @@ async def generate_pdf(invoice_id: str):
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             resp = await client.post(
-                "http://cat-env.eba-we2kfxih.us-east-1.elasticbeanstalk.com/generate_pdf_api/",
+                "http://cat-env.eba-gjsvvvwm.us-east-1.elasticbeanstalk.com/generate_pdf_api/",
                 json=payload,
                 headers={
                     "Content-Type": "application/json",

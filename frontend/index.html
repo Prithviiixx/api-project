@@ -253,7 +253,7 @@
       <div class="mb-3">
         <div class="section-header"><i class="bi bi-file-pdf me-2 text-success"></i>Generate PDF</div>
         <div class="text-muted small">
-          Proxies to: <code>POST http://cat-env.eba-we2kfxih.us-east-1.elasticbeanstalk.com/generate_pdf_api/</code>
+          Proxies to: <code>POST http://cat-env.eba-gjsvvvwm.us-east-1.elasticbeanstalk.com/generate_pdf_api/</code>
           &nbsp;<span class="badge bg-success api-badge">Friend API #2</span>
         </div>
       </div>
@@ -292,7 +292,7 @@
       <div class="mb-3">
         <div class="section-header"><i class="bi bi-currency-exchange me-2 text-info"></i>Currency Converter</div>
         <div class="text-muted small">
-          Public API: <code>GET https://api.frankfurter.app/latest?from=&hellip;&to=&hellip;</code>
+          Public API: <code>GET https://api.frankfurter.dev/v2/rate/{from}/{to}</code>
           &nbsp;<span class="badge bg-info text-dark api-badge">Public API #3</span>
           &nbsp;Free &amp; open-source, no key required
         </div>
@@ -1046,9 +1046,9 @@ async function convertCurrency() {
   result.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Fetching rate from Frankfurter API…</div>';
 
   try {
-    const r = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+    const r = await fetch(`https://api.frankfurter.dev/v2/rate/${from}/${to}`);
     const d = await r.json();
-    const rate = d.rates[to];
+    const rate = d.rate;
     const converted = (amount * rate).toFixed(4);
     result.innerHTML = `
       <div class="alert alert-success d-flex align-items-center gap-3 mb-0">
@@ -1067,9 +1067,9 @@ async function loadAllRates() {
   const grid = document.getElementById('rates-grid');
   grid.innerHTML = '<div class="col-12 text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Loading live rates…</div>';
   try {
-    const r = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const r = await fetch('https://api.frankfurter.dev/v2/rates?base=USD');
     const d = await r.json();
-    grid.innerHTML = Object.entries(d.rates).map(([ccy, rate]) => `
+    grid.innerHTML = d.map(({quote: ccy, rate}) => `
       <div class="col-6 col-md-3 col-lg-2">
         <div class="card text-center p-2">
           <div class="fw-bold text-primary">${ccy}</div>
